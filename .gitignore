@@ -1,3 +1,12 @@
+Alien-TinyCDB-*
+.build
+*.html
+*.tar.gz
+*.old
+Makefile
+.bash_history
+.env
+_alien/
 
 # Claude Code — commit: skills/, agents/, hooks/, settings.json
 # Ignore: local overrides, credentials, session data
