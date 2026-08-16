@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use parent 'Alien::Base';
 
-=head1 SYNOPSIS
+=synopsis
 
     use Alien::TinyCDB;
     use ExtUtils::MakeMaker;
@@ -25,7 +25,7 @@ Or with L<FFI::Platypus>:
     my $ffi = FFI::Platypus->new( api => 1 );
     $ffi->lib(Alien::TinyCDB->dynamic_libs);
 
-=head1 DESCRIPTION
+=description
 
 This module provides the TinyCDB library. TinyCDB is a small, fast and reliable
 utility and subroutine library for creating and reading constant databases.
@@ -61,7 +61,7 @@ Returns the linker flags needed to link against TinyCDB.
 
 Returns a list of dynamic library paths that can be used with L<FFI::Platypus>.
 
-=head1 SEE ALSO
+=seealso
 
 =over 4
 
