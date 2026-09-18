@@ -1,0 +1,26 @@
+---
+claimed_at: 2026-09-18T04:10:21Z
+claimed_by: claude
+class: standard
+completed: 2026-09-18T04:10:21Z
+created: 2026-08-31T04:38:00Z
+id: 1
+priority: medium
+started: 2026-09-18T03:05:08Z
+status: done
+tags:
+- test
+- alien
+title: t/load.t does not exercise ->dynamic_libs
+updated: 2026-09-18T04:10:21Z
+---
+
+lib/Alien/TinyCDB.pm POD documents ->dynamic_libs as the primary FFI::Platypus entry point (SYNOPSIS + METHODS), but t/load.t only asserts ->cflags and ->libs. Add coverage that ->dynamic_libs returns at least one path on the share-build path, so the advertised contract is tested rather than assumed.
+
+Worker-Fund (verifiziert gegen tinycdb-0.81): Praemisse invertiert. Auf dem Share-Build ist ->dynamic_libs LEER — Makefile 'all: static' baut nur libcdb.a; Shared-Targets (shared/install-sharedlib) werden nie aufgerufen, keine .so wird installiert. Aber POD bewirbt ->dynamic_libs als primaeren FFI-Einstiegspunkt => echter Widerspruch. Kein ehrlicher Test moeglich ohne Richtungsentscheidung. Zwei Wege (beide Build-/POD-Aenderung, gekoppelt an #2-Migration): (1) Shared Lib mitbauen -> dynamic_libs wird real, POD stimmt; (2) POD korrigieren, static/XS-only, Test asserted static-Contract. Test wird ehrlich nachgezogen, sobald Richtung steht.
+
+Umsetzung (Worker a3567): dynamic_libs-Test ergaenzt (tests=>4), auf dem Share-Pfad gruen (2 .so-Pfade). ABER: Regression vom neuen System-Probe entdeckt. Auf diesem Host (System-TinyCDB vorhanden) verifiziert: pkg-config --cflags libcdb ist LEER, --libs ist '-lcdb'. Damit nimmt Alien den System-Pfad und ok(cflags) faellt um -> broken auf CPAN-Testern mit System-TinyCDB. Leere cflags auf System-Pfad sind korrekt (Header im Default-Include). Fix: t/load.t muss den echten Contract auf BEIDEN Pfaden (share+system) abbilden, nicht truthy-cflags annehmen. Bleibt in-progress bis Test robust.
+
+Test-Fix umgesetzt + vom Orchestrator reviewt: t/load.t tests=>5, Contract pro install_type — libs=~/-lcdb/ (beide), cflags share=/-I/ | system=defined(leer ok), dynamic_libs>=1 UND echtes .so-Suffix (beide). FFI haelt auf BEIDEN Pfaden (system liefert /usr/lib/.../libcdb.so.1). dzil test gruen: system + ALIEN_INSTALL_TYPE=share.
+
+Committet als 9393cff auf main. Release-Check GO. done.
