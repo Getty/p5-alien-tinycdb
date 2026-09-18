@@ -1,6 +1,6 @@
 package Alien::TinyCDB;
 # ABSTRACT: Alien package for the TinyCDB library
-
+our $VERSION = '0.002';
 use strict;
 use warnings;
 use parent 'Alien::Base';
