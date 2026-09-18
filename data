@@ -1,0 +1,19 @@
+---
+class: standard
+completed: 2026-09-18T04:30:28Z
+created: 2026-09-18T04:00:43Z
+id: 5
+priority: medium
+started: 2026-09-18T04:30:28Z
+status: done
+tags:
+- docs
+- drift
+title: Stale .claude/-Doku nach Alien::Build-Migration aktualisieren (+ ob .claude/
+  ins CPAN-Tarball soll)
+updated: 2026-09-18T04:30:28Z
+---
+
+Die ModuleBuild->Alien::Build-Migration (karr #1/#2) macht die repo-eigene Agenten-Guidance faktisch falsch: CLAUDE.md, .claude/rules/alien-tinycdb-rules.md (Hazard 'There is no alienfile — the build lives in dist.ini' ist jetzt FALSCH), .claude/agents/alien-tinycdb-*.md (Briefings), und der HIER ownede Skill .claude/skills/alien-tinycdb-core (Narrativ 'why there is no alienfile' ist invertiert) beschreiben noch die alte Welt. Wichtig: alien-tinycdb-core ist hier owned = editierbar; die anderen Skills sind Hardlinks -> nur via manage-skills im Home-Repo aendern. Aktiv irrefuehrend, weil rules+CLAUDE.md jeden Turn auto-geladen werden. Separat: Release-Checker fand, dass .claude/ (agents/rules/skills/CLAUDE.md) ins CPAN-Tarball wandert (kein MANIFEST.SKIP/PruneCruft) — entscheiden, ob diese Agenten-Infra ueberhaupt nach CPAN soll (dist.ini-Entscheidung). Kein funktionaler Release-Blocker.
+
+Doku-Teil erledigt: CLAUDE.md, .claude/rules, beide Agent-Briefings und der owned Skill alien-tinycdb-core auf die alienfile/Alien::Build-Welt aktualisiert (committet f8ca06c). Verifiziert: nur diese 5 Dateien geaendert, kein hardlinked Skill angefasst, SKILL.md link count weiter 1, keine stale Referenzen mehr in Dist-eigenen Dateien. Tarball-Teil (.claude/ ins CPAN-Tarball prunen) ist fleet-weit -> ins Bundle-Repo ausgelagert (Dist-Zilla-PluginBundle-Author-GETTY Ticket #6). done.
