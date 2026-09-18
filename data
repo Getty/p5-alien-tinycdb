@@ -1,0 +1,14 @@
+---
+class: standard
+created: 2026-09-18T03:48:43Z
+id: 4
+priority: low
+status: backlog
+tags:
+- build
+- portability
+title: Shared-Lib-Build ist GNU CC/LD-spezifisch — Portabilitaet macOS/BSD pruefen
+updated: 2026-09-18T03:48:43Z
+---
+
+tinycdb Makefile sharedlib-Target hardcoded -fPIC/-shared/-Wl,--soname=/-Wl,--version-script= (GNU ld). Auf Linux verifiziert ok; kann auf non-GNU-ld (macOS/manche BSD) fehlschlagen. Da wir jetzt die .so fuer FFI zwingend bauen (Path 1), ist das ein realer Portabilitaets-Pfad. Pruefen/absichern bevor der Dist plattformbreit ausgeliefert wird.
