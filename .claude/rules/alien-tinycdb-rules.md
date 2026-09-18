@@ -15,8 +15,8 @@ force-loaded via `briefing.skills` — this file is for the orchestrating agent.
 3. **Goal-driven execution** — Define success criteria, loop until verified.
 4. **Surface conflicts, don't average them** — Contradicting patterns: pick one, explain
    why, flag the other. Don't blend.
-5. **Read before you write** — Read the `alien_*` block in `dist.ini` end to end before
-   changing any key; probe, download, `make` and the gathered flags are one chain.
+5. **Read before you write** — Read the `alienfile` end to end before changing any part;
+   probe, download, `make` and the gathered flags are one chain.
 6. **Tests verify intent, not just behavior** — `t/load.t` asserts the consumer contract;
    assert the actual flags, not a proxy. Reproduce a bug before fixing it; leave the
    regression test behind.
@@ -39,14 +39,15 @@ Depends on whether the Agent/Task tool is available to you.
 
   | Task | Agent |
   |---|---|
-  | Implement / refactor / debug the `dist.ini` build config, the `.pm`, or `t/` | `alien-tinycdb-worker` (default) |
+  | Implement / refactor / debug the `alienfile`/`dist.ini` build config, the `.pm`, or `t/` | `alien-tinycdb-worker` (default) |
   | Pre-release audit | `alien-tinycdb-release-checker` |
 
 - **You cannot spawn subagents** (you ARE an `alien-tinycdb-*` agent): the lock does not
   apply — implement, refactor, debug and test per these rules.
 
-Behavior-relevant = the `dist.ini` `alien_*` build config (probe/download/build/install),
-`lib/Alien/TinyCDB.pm`, and `t/`. Prose in `README.md` and `Changes` bullets are not.
+Behavior-relevant = the `alienfile` build recipe and `dist.ini`'s `alien_build=1` config
+(probe/download/build/install), `lib/Alien/TinyCDB.pm`, and `t/`. Prose in `README.md` and
+`Changes` bullets are not.
 
 ## Coordination — karr board (always in scope)
 
@@ -72,15 +73,16 @@ local repo state matters; CPAN lag is never a blocker and never a ticket.
 
 ## Hazards specific to this distribution
 
-- **There is no alienfile — the build lives in `dist.ini`.** This is the
-  `Alien::Base::ModuleBuild` path (no `alien_build = 1`), so the `alien_*` keys generate
-  the `Build.PL`. A worker that goes looking for an `alienfile` to edit, or adds one, is
-  changing the wrong thing. Mechanism: skill `alien-tinycdb-core`.
+- **The build lives in the `alienfile` (Alien::Build path).** `[@Author::GETTY]` carries
+  `alien_build = 1`, which generates a `Makefile.PL` via `Alien::Build::MM` (MakeMaker
+  stays; there is no `Build.PL`). Change build behaviour by editing the `alienfile`, not
+  `dist.ini`. A worker looking for `Alien::Base::ModuleBuild` `alien_*` keys in `dist.ini`
+  is looking at the removed world. Mechanism: skill `alien-tinycdb-core`.
 - **Upstream is fetched at build time, not vendored, and the version is not pinned.** The
-  share build downloads the newest `tinycdb-*.tar.gz` from `alien_repo` and runs `make`,
-  so it needs network + a C compiler + `make`, and a host without a system TinyCDB is the
-  path that actually exercises the build. Pinning a version is a `dist.ini` change and a
-  maintainer decision.
+  share build downloads the newest `tinycdb-*.tar.gz` from the `alienfile`'s `start_url`
+  and runs `make`, so it needs network + a C compiler + `make`, and a host without a
+  system TinyCDB is the path that actually exercises the build. Pinning a version is an
+  `alienfile` change and a maintainer decision.
 - **An untracked file does not exist as far as dzil is concerned.** `Git::GatherDir` skips
   it; `prove` runs it and passes while the release tarball omits it. `git add` new files
   as soon as they exist.

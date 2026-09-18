@@ -12,13 +12,14 @@ principle, the lane definition and this dist's hazards are in
 
 | Task | Agent |
 |---|---|
-| Implement / refactor / debug the `dist.ini` build config, `lib/Alien/TinyCDB.pm`, or `t/` | `alien-tinycdb-worker` (default) |
+| Implement / refactor / debug the `alienfile`/`dist.ini` build config, `lib/Alien/TinyCDB.pm`, or `t/` | `alien-tinycdb-worker` (default) |
 | Pre-release audit | `alien-tinycdb-release-checker` |
 
 The agents carry their knowledge via `briefing.skills` (see `.claude/agents/`); the main
-agent delegates rather than loading them. The TinyCDB specifics — why there is no
-alienfile (the `Alien::Base::ModuleBuild` path), share-vs-system, that upstream is fetched
-not vendored, and the consumer contract — live in skill `alien-tinycdb-core` under
+agent delegates rather than loading them. The TinyCDB specifics — the `alienfile` build
+recipe (the `Alien::Build` path, `alien_build=1`), share-vs-system probing, the shared
+library built for FFI, that upstream is fetched not vendored, and the consumer contract —
+live in skill `alien-tinycdb-core` under
 `.claude/skills/`; the rest of the skills there are hardlinks from the shared library,
 maintained via `manage-skills` in their home repos.
 

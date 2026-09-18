@@ -1,6 +1,6 @@
 ---
 name: alien-tinycdb-core
-description: "Use when working on Alien::TinyCDB — the dist.ini alien_* build config, the Alien::Base::ModuleBuild probe/download/make pipeline, lib/Alien/TinyCDB.pm, or the cflags/libs/dynamic_libs contract this Alien hands to XS or FFI consumers of Michael Tokarev's TinyCDB (corpit.ru cdb) C library. Covers why there is no alienfile, share-vs-system, and that upstream is fetched (not vendored)."
+description: "Use when working on Alien::TinyCDB — the alienfile build recipe, the Alien::Build probe/download/make pipeline, dist.ini's alien_build=1 config, lib/Alien/TinyCDB.pm, or the cflags/libs/dynamic_libs contract this Alien hands to XS or FFI consumers of Michael Tokarev's TinyCDB (corpit.ru cdb) C library. Covers the alienfile, share-vs-system probing, the shared library built for FFI, and that upstream is fetched (not vendored)."
 ---
 
 # Alien::TinyCDB — what this distribution actually decides
@@ -12,64 +12,80 @@ standard `cflags`/`libs`/`dynamic_libs` methods — either by detecting a system
 by building it from upstream source.
 
 Generic Alien / consumer mechanics live in skill `perl-alien`; the XS/link side in skill
-`perl-xs`. This skill is only the TinyCDB-specific invariants — read it before editing
-`dist.ini`'s build config or reasoning about why a consumer's link broke.
+`perl-xs`. This skill is only the TinyCDB-specific invariants — read it before editing the
+`alienfile` or reasoning about why a consumer's link broke.
 
-## There is no alienfile — the build is configured in dist.ini
+## The build lives in the alienfile (Alien::Build path)
 
-This is the invariant a reader will get wrong first. `perl-alien` (and the sibling
-`Alien::Tree::Sitter`) describe the modern `Alien::Build` + **`alienfile`** path. This
-distribution uses the **older `Alien::Base::ModuleBuild`** path instead:
+The build recipe is the `alienfile` in the distribution root, run by `Alien::Build`.
+`[@Author::GETTY]` carries **`alien_build = 1`**, which wires in
+`Dist::Zilla::Plugin::AlienBuild`: it generates a `Makefile.PL` driven by
+`Alien::Build::MM`. MakeMaker **stays** — `Alien::Build::MM` munges that generated
+`Makefile.PL`, so there is **no `Build.PL`**. `cpanfile` declares `Alien::Build`,
+`Alien::Build::MM` and `ExtUtils::MakeMaker` under `configure`. To change build behaviour
+you edit the `alienfile`, not `dist.ini`.
 
-- `cpanfile` declares `Alien::Base::ModuleBuild` under `configure` — the generated
-  `Build.PL` is a `Module::Build` subclass, not `Alien::Build::MM`.
-- `[@Author::GETTY]` has **no `alien_build = 1`**. That flag is what switches the bundle
-  to the alienfile path; without it, the bundle wires the `alien_*` keys into a
-  `Build.PL` built on `Alien::Base::ModuleBuild`.
+The `alienfile` is one probe/build chain:
 
-So **there is no `alienfile` and no `Build.PL` in the repo** — the bundle generates the
-`Build.PL` at `dzil build` time from the `alien_*` keys. To change build behaviour you
-edit those keys in `dist.ini`; do not go looking for an alienfile to edit or add one.
+```perl
+plugin 'PkgConfig' => ( pkg_name => 'libcdb' );    # system probe: upstream ships libcdb.pc
 
-The keys that drive it, and what each decides:
-
-```ini
-alien_repo = http://www.corpit.ru/mjt/tinycdb   # directory the tarball is fetched from
-alien_name = tinycdb
-alien_pattern_prefix  = tinycdb-                 # }
-alien_pattern_version = ([\d\.]+)                # } match tinycdb-<version>.tar.gz
-alien_pattern_suffix  = \.tar\.gz                # }
-alien_autoconf_with_pic = 0                      # TinyCDB has no ./configure — do not treat it as autoconf
-alien_build_command   = make prefix=%s          # plain Makefile; %s is the install prefix
-alien_install_command = make install prefix=%s
+share {
+  start_url 'http://www.corpit.ru/mjt/tinycdb/';   # newest tinycdb-<version>.tar.gz, not pinned
+  plugin 'Download' => (
+    filter  => qr/^tinycdb-[0-9\.]+\.tar\.gz$/,
+    version => qr/^tinycdb-([0-9\.]+)\.tar\.gz$/,
+  );
+  plugin 'Extract' => 'tar.gz';
+  build [                                           # plain hand-written Makefile, no ./configure
+    '%{make} prefix=%{.install.prefix} static sharedlib',
+    '%{make} prefix=%{.install.prefix} install install-sharedlib',
+  ];
+  plugin 'Gather::IsolateDynamic';                  # move libcdb.so* into dynamic/
+  gather sub {                                      # cflags -I<prefix>/include, libs -L<prefix>/lib -lcdb
+    my ($build) = @_;
+    my $prefix = $build->runtime_prop->{prefix};
+    $build->runtime_prop->{cflags} = "-I$prefix/include";
+    $build->runtime_prop->{libs}   = "-L$prefix/lib -lcdb";
+  };
+};
 ```
 
-`alien_autoconf_with_pic = 0` and the explicit `alien_build_command`/`alien_install_command`
-are load-bearing together: TinyCDB ships a **plain hand-written `Makefile`, not an
-autoconf project**, so the default autoconf `configure && make` path does not apply — the
-build is driven by `make prefix=%s` directly. `%s` is the staging/install prefix Alien
-supplies; never replace it with a literal path.
+The load-bearing detail: TinyCDB's `Makefile` defaults to `all: static` — only `libcdb.a`
+plus the `cdb` binary. The shared library lives behind the separate `sharedlib` /
+`install-sharedlib` targets, which upstream marks GNU CC/LD specific (`-fPIC` / `-shared`).
+This dist runs **both** the static and the shared targets, so `->libs` links `libcdb.a`
+and `->dynamic_libs` finds `libcdb.so` — FFI works, not only XS. `%{.install.prefix}` is
+the staging prefix Alien supplies; never replace it with a literal path.
 
 ## Upstream is fetched, not vendored
 
 Unlike a dist that bundles a `share/*.tar.gz`, this one has **no tarball in the repo**.
-The share build downloads from `alien_repo` at install time and the pattern matches the
-**newest** `tinycdb-<version>.tar.gz` the directory lists — the version is **not pinned**.
-Consequences:
+The share build downloads from the `alienfile`'s `start_url` at install time and the
+`Download` plugin matches the **newest** `tinycdb-<version>.tar.gz` the directory lists —
+the version is **not pinned**, and the fetch is plain `http`. Consequences:
 
 - The share-build path needs **network access, a C compiler, and `make`** at install
   time. An air-gapped host with no system TinyCDB cannot install.
-- A new upstream release is picked up automatically. If a specific version ever must be
-  held, that is a `dist.ini` change (pin the pattern), not a code change — and a
-  maintainer decision.
+- A new upstream release is picked up automatically. Pinning a version (and adding a
+  digest — a future `Alien::Build` will require one for an insecure `http` fetch) is an
+  `alienfile` change and a maintainer decision.
 
 ## share vs system
 
-`Alien::Base::ModuleBuild` probes first: if a usable system TinyCDB is found it takes the
-**system** path and gathers flags from it; otherwise it takes the **share** path and runs
-the download + `make` above into the Alien's own prefix. A machine that has the library
-installed never exercises the share build — so a change to the build config must be tested
-with the share path forced, not just on the maintainer's box.
+The `alienfile`'s `PkgConfig` plugin probes for a system `libcdb` first: if a usable one
+is found it takes the **system** path and gathers flags from pkg-config; otherwise the
+`share` block runs the download + `make` above into the Alien's own prefix. A machine that
+has the library installed never exercises the share build — so a change to the build config
+must be tested with `ALIEN_INSTALL_TYPE=share` forced, not just on the maintainer's box.
+
+The two paths gather **different flags**, and both are correct:
+
+- **system** — `cflags` can be legitimately empty (the header is on the default include
+  path, so pkg-config emits no `-I`); `libs` is `-lcdb`; `dynamic_libs` is the system
+  `libcdb.so`.
+- **share** — `cflags` is `-I<prefix>/include`; `libs` is `-L<prefix>/lib -lcdb`;
+  `dynamic_libs` is the built `libcdb.so`.
 
 ## The consumer contract
 
@@ -93,7 +109,9 @@ gathered; nothing is computed in the `.pm`.
 
 ## The smoke test
 
-`t/load.t` asserts the contract minimally: the module loads, and `cflags` and `libs` both
-return a true value (it also `diag`s them). That is the reason the distribution exists — a
-change that leaves either empty breaks every consumer's compile/link, so keep that
-assertion meaningful rather than loosening it to pass.
+`t/load.t` asserts the consumer contract per install type: `libs` always carries `-lcdb`;
+`cflags` must carry a `-I` include path on the **share** path but may be empty on the
+**system** path (header on the default include path); and `dynamic_libs` returns at least
+one real shared object on **both** paths (the FFI contract). That is the reason the
+distribution exists — a change that breaks compile/link or FFI breaks every consumer, so
+keep those assertions meaningful and path-aware rather than loosening them to pass.
