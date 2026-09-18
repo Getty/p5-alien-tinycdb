@@ -1,0 +1,15 @@
+---
+class: standard
+created: 2026-09-18T03:48:39Z
+id: 3
+priority: medium
+status: backlog
+tags:
+- build
+- alien
+title: Insecure http download + tinycdb-Version/Digest pinnen bevor Alien::Build hart
+  faellt
+updated: 2026-09-18T03:48:39Z
+---
+
+alienfile laedt von http://www.corpit.ru/mjt/tinycdb/ (http-only) die newest tinycdb-*.tar.gz, unpinned. Alien::Build warnt schon: 'fetch did not use a secure protocol: http' und 'a future version of Alien::Build will die here by default ... required digest missing'. Ein kuenftiges Alien::Build bricht den Build hart ab, solange keine Version+SHA gepinnt oder ein https-Mirror genutzt wird. Loesung: Version pinnen + digest hinterlegen (Alien::Build Download/Digest), ggf. https-Mirror. Bewusst als eigener Schritt vom Migrations-PR getrennt (Maintainer-Entscheidung welche Version).
