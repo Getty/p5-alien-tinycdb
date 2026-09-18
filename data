@@ -1,0 +1,24 @@
+---
+claimed_at: 2026-09-18T04:10:25Z
+claimed_by: claude
+class: standard
+completed: 2026-09-18T04:10:25Z
+created: 2026-08-31T04:38:04Z
+id: 2
+priority: low
+started: 2026-09-18T03:29:02Z
+status: done
+tags:
+- build
+- maintainer-decision
+title: Evaluate migrating from Alien::Base::ModuleBuild to Alien::Build (alienfile)
+updated: 2026-09-18T04:10:25Z
+---
+
+This dist uses the older Alien::Base::ModuleBuild path: cpanfile configure-requires Alien::Base::ModuleBuild and dist.ini has no alien_build=1, so the alien_* keys generate a Module::Build-based Build.PL and there is no alienfile. The house other Alien dists (e.g. Alien::Tree::Sitter) use Alien::Build + alienfile via alien_build=1. Migrating would modernize the build and allow vendoring/pinning the tarball. Maintainer decision — do not action without an explicit go-ahead.
+
+Richtung entschieden (Maintainer, 2026-09-18): Path 1 — FFI real machen. Migration auf alien_build=1 + alienfile UND Shared Lib mitbauen, sodass ->dynamic_libs auf dem Share-Build libcdb.so liefert. Wird zusammen mit #1 in EINEM Worker-Lauf umgesetzt (gekoppelt: der neue Build muss die .so produzieren, damit der #1-Test ehrlich gruen wird). Consumer-Contract cflags/libs/dynamic_libs muss erhalten/erfuellt bleiben. Kein Pinnen der tinycdb-Version in diesem Schritt (weiter newest von alien_repo); Pinnen bleibt optionaler Folge-Schritt.
+
+Migration umgesetzt (Worker a3567): alienfile NEU (staged), dist.ini -> alien_build=1 (ModuleBuild alien_* raus), cpanfile -> Alien::Build/Alien::Build::MM/ExtUtils::MakeMaker configure + Alien::Base 0.038 runtime. Share-Build baut static+sharedlib, dynamic_libs real. dzil test (share) gruen. Offen vor Release: System-Pfad-Contract (siehe #1), Folge-Tickets fuer http/pinning + Shared-Portabilitaet angelegt. Diff vom Orchestrator reviewt = mechanisch stimmig. Noch nicht committet.
+
+Committet als 9393cff auf main. Release-Check GO. done.
