@@ -2,7 +2,6 @@
 name: alien-tinycdb-worker
 description: "Default Alien::TinyCDB worker — implement, refactor, debug and test this Alien::Base distribution that provides Michael Tokarev's TinyCDB C library to Perl. Owns the alienfile + dist.ini alien_build=1 build config (Alien::Build path), lib/Alien/TinyCDB.pm and t/. Pre-loaded with the Alien and XS patterns, Getty's release flow and this dist's TinyCDB specifics. Leaves a commit-ready tree; never commits — commits belong to alien-tinycdb-release-manager."
 model: inherit
-allowed-tools: Read, Edit, Write, Bash, Glob, Grep
 briefing:
   skills:
     - alien-tinycdb-core
