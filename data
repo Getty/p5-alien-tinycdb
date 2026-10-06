@@ -1,0 +1,24 @@
+---
+class: standard
+created: 2026-10-06T19:40:51Z
+id: 6
+priority: medium
+status: backlog
+tags:
+- alien
+- build
+- xs
+- review-2026-10-06
+title: 'Share-Build: ->libs zeigt auf ein ohne -fPIC gebautes libcdb.a, und kein Test
+  linkt dagegen'
+updated: 2026-10-06T19:40:51Z
+---
+
+`alienfile:38-39` baut die Upstream-Targets `static sharedlib` und installiert `install install-sharedlib`. Upstreams `static`-Target erzeugt `libcdb.a` mit den normalen CFLAGS (ohne `-fPIC`); für PIC-Objekte hat das tinycdb-Makefile ein eigenes Target (`piclib` -> `libcdb_pic.a`, `install-piclib`). Danach schiebt `Gather::IsolateDynamic` (`alienfile:45`) die `.so` nach `dynamic/`, und der gather (`alienfile:50-55`) meldet `libs = -L$prefix/lib -lcdb`. In `lib/` liegt damit nur noch das nicht-PIC-Archiv - und genau das linkt der im POD beworbene XS-Weg (`LIBS => Alien::TinyCDB->libs`, SYNOPSIS in `lib/Alien/TinyCDB.pm`) in ein Perl-`.so`. Auf x86_64 scheitert das typischerweise mit `relocation R_X86_64_32 ... can not be used when making a shared object; recompile with -fPIC` (ob es auffällt, hängt vom `-fPIE`-Default des Distro-gcc ab).
+
+Nicht nachgestellt: auf dieser Maschine ist die Dist als `system` installiert (`Alien::TinyCDB->install_type`), und der Share-Pfad braucht Netz. Dass es niemand merkt, liegt an `t/load.t`: der Test prüft nur Strings (`-lcdb`, `-I`) und dass `dynamic_libs` einen Dateinamen liefert - er kompiliert und lädt nichts.
+
+Fertig, wenn: (1) `t/` einen `Test::Alien`-`xs_ok` (z. B. `cdb_make_start` aufrufen) und einen `ffi_ok` gegen `dynamic_libs` hat, beide auch mit `ALIEN_INSTALL_TYPE=share` grün; (2) der Share-Build dafür entweder `CFLAGS='-O2 -fPIC'` an `make` übergibt oder `piclib`/`install-piclib` nutzt und `libs` darauf zeigt.
+
+---
+Fleet review 2026-10-06 · kind: bug · confidence: plausible
