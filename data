@@ -1,0 +1,17 @@
+---
+class: standard
+created: 2026-10-06T19:40:56Z
+id: 7
+priority: low
+status: backlog
+tags:
+- docs
+- review-2026-10-06
+title: POD nennt CDB_File "Pure Perl" - es ist ein XS-Modul
+updated: 2026-10-06T19:40:56Z
+---
+
+`lib/Alien/TinyCDB.pm`, Abschnitt `=seealso`: `L<CDB_File> - Pure Perl interface to cdb files (doesn't require TinyCDB)`. CDB_File ist ein XS-Modul mit eigener cdb-Implementierung in C; richtig ist nur der zweite Halbsatz. Vorschlag: `XS interface to cdb files with its own cdb implementation (does not use TinyCDB)`.
+
+---
+Fleet review 2026-10-06 · kind: docs · confidence: verified
