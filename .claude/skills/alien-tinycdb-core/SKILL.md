@@ -115,3 +115,21 @@ gathered; nothing is computed in the `.pm`.
 one real shared object on **both** paths (the FFI contract). That is the reason the
 distribution exists — a change that breaks compile/link or FFI breaks every consumer, so
 keep those assertions meaningful and path-aware rather than loosening them to pass.
+
+## Repo mechanics
+
+- **An untracked file does not exist as far as dzil is concerned.** `Git::GatherDir`
+  collects only what git knows about: a new file that was never `git add`-ed is skipped
+  while gathering, so `prove` runs it and passes while the release tarball silently
+  omits it. `git add` new files as soon as they exist.
+- **`.claude/` is git-ignored except for a whitelist.** The root `.gitignore` ignores
+  `.claude/*` and re-admits `settings.json`, `agents/`, `skills/`, `rules/` — a *new*
+  directory under `.claude/` therefore stays invisible to git until it is whitelisted
+  there. Verify with `git status --short` after creating one; the same applies to
+  `.claude/worktrees/`, which is ignored explicitly.
+- **Two kinds of skill live under `.claude/skills/`.** The ones `skilletor` installs
+  (`skilletor status` lists them under *project scope*) carry a `.gitignore` holding `*`
+  in their own directory — they are build artifacts, the next `skilletor sync` overwrites
+  them, and editing one is forbidden. A repo-owned skill (tracked by git, no entry in
+  `.claude/skilletor.json`) belongs to this repository: `alien-tinycdb-core` is the only
+  one here, and it is the file to extend when the rules grow too long.
