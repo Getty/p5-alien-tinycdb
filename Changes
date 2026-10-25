@@ -7,6 +7,8 @@ Revision history for Alien-TinyCDB
       into a shared object
     - A failing shared-library build (non-GNU linker) no longer breaks the
       static build; dynamic_libs is empty there
+    - Document CDB_File correctly as an XS module with its own cdb
+      implementation
 
 0.001     2026-09-18 04:33:51Z
     - Initial release

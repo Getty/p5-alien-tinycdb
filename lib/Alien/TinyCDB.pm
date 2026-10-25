@@ -69,7 +69,7 @@ Returns a list of dynamic library paths that can be used with L<FFI::Platypus>.
 
 =item * L<http://www.corpit.ru/mjt/tinycdb.html> - TinyCDB homepage
 
-=item * L<CDB_File> - Pure Perl interface to cdb files (doesn't require TinyCDB)
+=item * L<CDB_File> - XS interface to cdb files with its own cdb implementation (does not use TinyCDB)
 
 =back
 
