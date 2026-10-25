@@ -41,7 +41,15 @@ else {
 # default target builds only the static libcdb.a — the sharedlib /
 # install-sharedlib Makefile targets plus Gather::IsolateDynamic on a share
 # build.
+#
+# The one exception is a share build on a non-Linux host: upstream's sharedlib
+# target uses GNU ld flags, and the alienfile skips it with a warning where the
+# linker rejects them, leaving dynamic_libs empty.
+SKIP: {
+skip 'shared libcdb is only built where upstream\'s GNU ld flags work', 2
+  if $install_type eq 'share' && $^O ne 'linux' && !@dynamic_libs;
 ok(scalar(@dynamic_libs) >= 1, 'dynamic_libs returns at least one shared library path')
   or diag('no shared library found: FFI consumers cannot dlopen TinyCDB');
 my @shared = grep { /\.(?:so|dll|dylib|bundle)(?:\.\d+)*$/ } @dynamic_libs;
 ok(scalar(@shared) >= 1, 'dynamic_libs entry is a real shared object');
+}

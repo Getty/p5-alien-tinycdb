@@ -15,28 +15,51 @@ plugin 'PkgConfig' => (
 
 share {
 
-  # Upstream is fetched at build time, not vendored, and the version is NOT
-  # pinned: pick the newest tinycdb-<version>.tar.gz the directory lists.
-  # This mirrors the previous Alien::Base::ModuleBuild alien_pattern_* keys
-  # (prefix tinycdb-, version ([\d.]+), suffix \.tar\.gz) against alien_repo.
-  start_url 'http://www.corpit.ru/mjt/tinycdb/';
+  # Upstream is fetched at build time, not vendored. The release is pinned to
+  # one tarball over https and verified against its SHA256 (a future
+  # Alien::Build dies on an insecure fetch without a digest). A newer upstream
+  # release is picked up by bumping the file name and the digest together; the
+  # digest is the SHA256 of tinycdb-0.81.tar.gz as served by corpit.ru.
+  start_url 'https://www.corpit.ru/mjt/tinycdb/tinycdb-0.81.tar.gz';
   plugin 'Download' => (
-    filter  => qr/^tinycdb-[0-9\.]+\.tar\.gz$/,
-    version => qr/^tinycdb-([0-9\.]+)\.tar\.gz$/,
+    url => 'https://www.corpit.ru/mjt/tinycdb/tinycdb-0.81.tar.gz',
+    ssl => 1,
   );
+  plugin 'Digest' => [
+    SHA256 => '469de2d445bf54880f652f4b6dc95c7cdf6f5502c35524a45b2122d70d47ebc2',
+  ];
   plugin 'Extract' => 'tar.gz';
 
   # TinyCDB ships a plain hand-written Makefile (no ./configure). Its default
-  # `all: static` target builds only the static libcdb.a plus the cdb binary;
-  # the shared library lives behind the separate `sharedlib` (build) and
-  # `install-sharedlib` (install) targets, which upstream marks GNU CC/LD
-  # specific (-fPIC / -shared). Build and install BOTH the static archive and
-  # the shared object, so that ->libs links libcdb.a and ->dynamic_libs finds
-  # libcdb.so for FFI::Platypus. %s-style prefix is supplied by Alien::Build
-  # as the staging install prefix; never hardcode a path.
+  # `all: static` target builds only the static libcdb.a plus the cdb binary,
+  # and with the normal CFLAGS, i.e. without -fPIC. ->libs links that archive,
+  # and an XS consumer links it into a Perl shared object, which fails with
+  # "relocation R_X86_64_32 ... recompile with -fPIC" on toolchains that do not
+  # default to PIE. Hence CFLAGS carries -fPIC for the static archive too.
+  #
+  # The shared library lives behind the separate `sharedlib` /
+  # `install-sharedlib` targets, which upstream marks GNU CC/LD specific
+  # (-shared, -Wl,--soname=, -Wl,--version-script=). It is built for
+  # ->dynamic_libs (FFI::Platypus), but on a linker that does not know those
+  # flags it must not take the static build, i.e. the XS path, down with it:
+  # there it is skipped with a warning and ->dynamic_libs stays empty.
+  # The prefix is the staging install prefix supplied by Alien::Build; never
+  # hardcode a path.
+  my @make = ('%{make}', 'prefix=%{.install.prefix}', 'CFLAGS=-O2 -fPIC');
   build [
-    '%{make} prefix=%{.install.prefix} static sharedlib',
-    '%{make} prefix=%{.install.prefix} install install-sharedlib',
+    [ @make, 'static' ],
+    [ @make, 'install' ],
+    sub {
+      my ($build) = @_;
+      my @m = ('%{make}', 'prefix=' . $build->install_prop->{prefix}, 'CFLAGS=-O2 -fPIC');
+      my $ok = eval {
+        $build->system(@m, 'sharedlib');
+        $build->system(@m, 'install-sharedlib');
+        1;
+      };
+      $build->log("warning: shared libcdb not built, ->dynamic_libs will be empty: $@")
+        unless $ok;
+    },
   ];
 
   # Move the shared libraries into their own dynamic/ directory, keeping
