@@ -1,0 +1,20 @@
+---
+claimed_at: 2026-10-25T01:54:15Z
+claimed_by: offen-2610
+class: standard
+completed: 2026-10-25T01:54:15Z
+created: 2026-09-18T03:48:43Z
+id: 4
+priority: low
+started: 2026-10-25T01:44:20Z
+status: done
+tags:
+- build
+- portability
+title: Shared-Lib-Build ist GNU CC/LD-spezifisch — Portabilitaet macOS/BSD pruefen
+updated: 2026-10-25T01:54:15Z
+---
+
+tinycdb Makefile sharedlib-Target hardcoded -fPIC/-shared/-Wl,--soname=/-Wl,--version-script= (GNU ld). Auf Linux verifiziert ok; kann auf non-GNU-ld (macOS/manche BSD) fehlschlagen. Da wir jetzt die .so fuer FFI zwingend bauen (Path 1), ist das ein realer Portabilitaets-Pfad. Pruefen/absichern bevor der Dist plattformbreit ausgeliefert wird.
+
+2026-10-25 01:52 Decision: static build is mandatory, sharedlib/install-sharedlib run in a tolerant sub in the alienfile (eval, log warning, dynamic_libs empty). Verified with a cc shim that rejects --soname: static+XS stay green, build survives. Cannot verify on real macOS/BSD (no host). t/load.t and t/ffi.t skip the dynamic_libs checks only for share on non-Linux with empty dynamic_libs; Linux stays strict. Commit d879291.
