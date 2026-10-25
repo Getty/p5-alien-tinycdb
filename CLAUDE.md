@@ -7,8 +7,9 @@ either a system install or a build from upstream source — via `cflags`/`libs`/
 ## Delegation
 
 Delegate behavior-relevant code to the right agent instead of touching it yourself — the
-principle, the lane definition and this dist's hazards are in
-`.claude/rules/alien-tinycdb-rules.md` (auto-loaded every turn).
+principle is a shared house rule (skilletor bundle `getty-cpan-dist@getty`); the lane
+definition and this dist's hazards are in `.claude/rules/alien-tinycdb-rules.md`
+(auto-loaded every turn).
 
 | Task | Agent |
 |---|---|
