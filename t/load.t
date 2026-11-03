@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More;
 
 use_ok('Alien::TinyCDB');
 
@@ -54,3 +54,5 @@ ok(scalar(@dynamic_libs) >= 1, 'dynamic_libs returns at least one shared library
 my @shared = grep { /\.(?:so|dll|dylib|bundle)(?:\.\d+)*$/ } @dynamic_libs;
 ok(scalar(@shared) >= 1, 'dynamic_libs entry is a real shared object');
 }
+
+done_testing;
