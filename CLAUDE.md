@@ -21,8 +21,8 @@ agent delegates rather than loading them. The TinyCDB specifics — the `alienfi
 recipe (the `Alien::Build` path, `alien_build=1`), share-vs-system probing, the shared
 library built for FFI, that upstream is fetched not vendored, and the consumer contract —
 live in skill `alien-tinycdb-core` under
-`.claude/skills/`; the rest of the skills there are hardlinks from the shared library,
-maintained via `manage-skills` in their home repos.
+`.claude/skills/`; the rest of the skills there are installed by skilletor from
+`.claude/skilletor.json` and maintained in their source repos.
 
 ## Build / test
 
